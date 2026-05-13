@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cine-Web | Eternity</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div class="wallpaper-shell wallpaper-default">
+      <video
+        id="wallpaper-default"
+        class="wallpaper-layer wallpaper-video"
+        autoplay
+        loop
+        muted
+        playsinline
+      >
+        <source src="/browser_1773875312272.mp4" type="video/mp4" />
+      </video>
+    </div>
+    <div class="wallpaper-shell wallpaper-incognito">
+      <video
+        id="wallpaper-incognito"
+        class="wallpaper-layer wallpaper-video"
+        loop
+        muted
+        playsinline
+      >
+        <source src="/incognito_1773875312273.mp4" type="video/mp4" />
+      </video>
+    </div>
+
+    <div id="start-page">
+      <div class="clock-container animate-in">
+        <div class="clock-time" id="clock-time">00:00</div>
+        <div class="clock-date" id="clock-date">LOADING SYSTEM</div>
+      </div>
+
+      <div class="search-container animate-in delay-1">
+        <div class="search-pill">
+          <span class="icon lead-icon" aria-hidden="true">⌕</span>
+          <input
+            type="text"
+            class="search-input"
+            id="home-search"
+            placeholder="Search the web or enter URL..."
+            autocomplete="off"
+          />
+          <div id="loading-indicator" class="loading-indicator" hidden>
+            <span class="spinner" aria-hidden="true"></span>
+          </div>
+        </div>
+      </div>
+
+      <button class="resume-btn" id="resume-btn" type="button">
+        <span class="icon">↺</span>
+        <span>Resume Session</span>
+      </button>
+
+      <div class="app-grid animate-in delay-2" id="app-grid"></div>
+
+      <div class="bookmarks-section animate-in delay-3" id="bookmarks-section">
+        <div class="section-title">Saved Destinations</div>
+      </div>
+    </div>
+
+    <div id="browser-ui">
+      <div class="browser-topbar">
+        <div class="brand" id="home-brand" role="button" tabindex="0">
+          CINE<span class="brand-accent">WEB</span>
+        </div>
+        <div class="topbar-divider"></div>
+
+        <div class="tabs-strip" id="tabs-strip"></div>
+
+        <button class="nav-btn" id="new-tab-btn" type="button" title="New Tab">
+          <span class="icon">+</span>
+        </button>
+        <button class="nav-btn" id="menu-btn" type="button" title="Menu">
+          <span class="icon">≡</span>
+        </button>
+      </div>
+
+      <div class="address-bar-container">
+        <div class="nav-cluster">
+          <button class="nav-btn" id="back-btn" type="button" title="Back">
+            <span class="icon">←</span>
+          </button>
+          <button class="nav-btn" id="forward-btn" type="button" title="Forward">
+            <span class="icon">→</span>
+          </button>
+          <button class="nav-btn" id="reload-btn" type="button" title="Reload">
+            <span class="icon">⟳</span>
+          </button>
+        </div>
+
+        <div class="url-display">
+          <input
+            id="address-input"
+            class="url-input"
+            type="text"
+            spellcheck="false"
+            autocomplete="off"
+            placeholder="Navigate anywhere"
+          />
+        </div>
+
+        <button class="nav-btn" id="bookmark-btn" type="button" title="Bookmark">
+          <span class="icon" id="bookmark-icon">☆</span>
+        </button>
+        <button class="nav-btn" id="incognito-toggle" type="button" title="Toggle Incognito Mode">
+          <span class="icon">◐</span>
+        </button>
+      </div>
+
+      <div id="content-area"></div>
+
+      <div class="settings-menu" id="settings-menu">
+        <button class="menu-item" id="minimize-btn" type="button">
+          <span class="icon">⌂</span>
+          <span>Minimize Browser</span>
+        </button>
+        <button class="menu-item" id="switch-mode-btn" type="button">
+          <span class="icon">◐</span>
+          <span>Switch Mode</span>
+        </button>
+        <div class="menu-divider"></div>
+        <button class="menu-item danger" id="clear-session-btn" type="button">
+          <span class="icon">✕</span>
+          <span>Clear Session</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="toast-container"></div>
+  </body>
+</html>

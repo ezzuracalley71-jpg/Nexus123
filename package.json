@@ -1,0 +1,16 @@
+{
+  "name": "proxy-scramjet-host",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@mercuryworkshop/epoxy-transport": "^3.0.1",
+    "@mercuryworkshop/proxy-transports": "^1.0.2",
+    "@mercuryworkshop/scramjet": "file:mercuryworkshop-scramjet-2.0.2-alpha.tgz",
+    "@mercuryworkshop/scramjet-controller": "file:mercuryworkshop-scramjet-controller-0.0.9.tgz",
+    "@mercuryworkshop/wisp-js": "^0.4.1"
+  }
+}

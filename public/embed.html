@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>flux embed</title>
+    <script src="/vendor/epoxy-transport.js"></script>
+    <script src="/scramjet/scramjet_bundled.js"></script>
+    <script src="/controller/controller.api.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
+
+      #loading {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #000;
+        z-index: 9999;
+      }
+
+      .loading-bar {
+        width: 80%;
+        max-width: 900px;
+        height: 10px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+
+      .loading-bar .progress {
+        height: 100%;
+        width: 0%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #e8404a 0%, #f07080 40%, #ffd0d8 80%, #e8404a 100%);
+        background-size: 200% 100%;
+        animation: shimmer 1.8s ease-in-out infinite;
+        transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      @keyframes shimmer {
+        0% {
+          background-position: 200% center;
+        }
+
+        100% {
+          background-position: -200% center;
+        }
+      }
+
+      #error {
+        display: none;
+        position: fixed;
+        inset: 0;
+        align-items: center;
+        justify-content: center;
+        background: #000;
+        color: #e55;
+        font-family: sans-serif;
+        font-size: 14px;
+        text-align: center;
+        padding: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loading">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
+        <div class="loading-bar">
+          <div class="progress" id="progress-fill"></div>
+        </div>
+        <span style="color: rgba(255, 255, 255, 0.4); font-family: sans-serif; font-size: 16px; letter-spacing: 0.05em;">this might take a while...</span>
+      </div>
+    </div>
+    <div id="error"></div>
+
+    <script>
+      const fill = document.getElementById("progress-fill");
+      let currentUrl = new URLSearchParams(location.search).get("url") || "";
+      let controllerFrame = null;
+
+      function setProgress(value) {
+        fill.style.width = Math.min(100, Math.max(0, value)) + "%";
+      }
+
+      function showError(message) {
+        document.getElementById("loading").style.display = "none";
+        const error = document.getElementById("error");
+        error.style.display = "flex";
+        error.textContent = message;
+      }
+
+      function updateTitle(title) {
+        if (title) {
+          document.title = title;
+        }
+
+        parent.postMessage(
+          {
+            type: "embed-state",
+            url: currentUrl,
+            title: title || document.title
+          },
+          location.origin
+        );
+      }
+
+      async function ensureServiceWorkerControl() {
+        if (!("serviceWorker" in navigator)) {
+          throw new Error("This browser does not support service workers.");
+        }
+
+        await navigator.serviceWorker.register("/scramjet-sw.js", { scope: "/" });
+        await navigator.serviceWorker.ready;
+
+        if (navigator.serviceWorker.controller) {
+          sessionStorage.removeItem("cineweb-embed-sw-reload");
+          return navigator.serviceWorker.controller;
+        }
+
+        if (!sessionStorage.getItem("cineweb-embed-sw-reload")) {
+          sessionStorage.setItem("cineweb-embed-sw-reload", "1");
+          location.reload();
+          return new Promise(() => {});
+        }
+
+        await new Promise((resolve) => {
+          navigator.serviceWorker.addEventListener("controllerchange", resolve, {
+            once: true
+          });
+        });
+
+        sessionStorage.removeItem("cineweb-embed-sw-reload");
+
+        if (!navigator.serviceWorker.controller) {
+          throw new Error("Service worker registration succeeded but did not take control.");
+        }
+
+        return navigator.serviceWorker.controller;
+      }
+
+      function buildTransport() {
+        const TransportCtor = window.EpoxyTransport?.default || window.EpoxyTransport;
+        if (!TransportCtor) {
+          throw new Error("Epoxy transport did not load.");
+        }
+
+        const wisp = `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/wisp/`;
+        return new TransportCtor({ wisp });
+      }
+
+      async function boot() {
+        if (!currentUrl) {
+          showError("No URL provided. Use embed.html?url=https://example.com");
+          return;
+        }
+
+        try {
+          document.title = new URL(currentUrl).hostname;
+        } catch {}
+
+        try {
+          setProgress(5);
+          const serviceworker = await ensureServiceWorkerControl();
+          setProgress(20);
+
+          const transport = buildTransport();
+          await transport.init();
+          setProgress(42);
+
+          const controller = new window.$scramjetController.Controller({
+            serviceworker,
+            transport,
+            config: {
+              prefix: "/~/sj/",
+              scramjetPath: "/scramjet/scramjet_bundled.js",
+              injectPath: "/controller/controller.inject.js",
+              wasmPath: "/scramjet/scramjet.wasm"
+            }
+          });
+
+          await controller.wait();
+          setProgress(72);
+
+          const iframe = document.createElement("iframe");
+          iframe.style.cssText =
+            "position:fixed;inset:0;width:100%;height:100%;border:none;z-index:1;background:#fff;";
+          document.body.appendChild(iframe);
+
+          controllerFrame = controller.createFrame(iframe);
+          setProgress(88);
+
+          const onFrameLoad = () => {
+            setProgress(100);
+            let title = "";
+
+            try {
+              title = iframe.contentDocument?.title || "";
+            } catch {}
+
+            if (!title) {
+              try {
+                title = new URL(currentUrl).hostname.replace(/^www\\./, "");
+              } catch {
+                title = currentUrl;
+              }
+            }
+
+            updateTitle(title);
+
+            setTimeout(() => {
+              document.getElementById("loading").style.display = "none";
+            }, 200);
+          };
+
+          iframe.addEventListener("load", onFrameLoad);
+          controllerFrame.go(currentUrl);
+
+          parent.postMessage({ type: "embed-ready" }, location.origin);
+        } catch (error) {
+          showError("Failed to load: " + (error?.message || String(error)));
+        }
+      }
+
+      window.addEventListener("message", (event) => {
+        if (event.origin !== location.origin) return;
+        if (!controllerFrame || !event.data || typeof event.data !== "object") return;
+
+        const data = event.data;
+
+        if (data.type === "navigate" && typeof data.url === "string") {
+          currentUrl = data.url;
+          updateTitle(new URL(currentUrl).hostname.replace(/^www\\./, ""));
+          controllerFrame.go(currentUrl);
+          document.getElementById("loading").style.display = "flex";
+          setProgress(88);
+          return;
+        }
+
+        if (data.type === "reload") {
+          controllerFrame.reload();
+          return;
+        }
+
+        if (data.type === "back") {
+          controllerFrame.back();
+          return;
+        }
+
+        if (data.type === "forward") {
+          controllerFrame.forward();
+        }
+      });
+
+      boot();
+    </script>
+  </body>
+</html>
