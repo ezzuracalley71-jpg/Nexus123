@@ -8,8 +8,12 @@ import { server as wisp } from "@mercuryworkshop/wisp-js/server";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const host = process.env.HOST || "127.0.0.1";
+const host = process.env.HOST || "0.0.0.0";
 const port = Number(process.env.PORT || 8080);
+const publicUrl =
+  process.env.PUBLIC_URL ||
+  process.env.RENDER_EXTERNAL_URL ||
+  `http://${host === "0.0.0.0" ? "127.0.0.1" : host}:${port}`;
 
 const publicDir = path.join(__dirname, "public");
 const scramjetDir = path.join(
@@ -142,6 +146,10 @@ server.on("upgrade", (req, socket, head) => {
 });
 
 server.listen(port, host, () => {
-  console.log(`Scramjet host listening on http://${host}:${port}`);
-  console.log(`Wisp endpoint available at ws://${host}:${port}/wisp/`);
+  const publicWispUrl = new URL("/wisp/", publicUrl);
+  publicWispUrl.protocol = publicWispUrl.protocol === "https:" ? "wss:" : "ws:";
+
+  console.log(`Scramjet host listening on ${publicUrl}`);
+  console.log(`Bound internally on ${host}:${port}`);
+  console.log(`Wisp endpoint available at ${publicWispUrl.toString()}`);
 });
